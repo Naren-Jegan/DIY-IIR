@@ -4,13 +4,15 @@ from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from bs4 import BeautifulSoup as bs
+from nltk import pos_tag
 import pickle
 import re
+from os.path import isfile
 
 
 def preprocess(sentence):
     sentence = sentence.lower()
-    tokenizer = RegexpTokenizer(r'\w+')
+    tokenizer = RegexpTokenizer(r'[a-zA-Z]+')
     words = tokenizer.tokenize(sentence)
     lemmatizer = WordNetLemmatizer()
     filtered_words = [lemmatizer.lemmatize(w) for w in words if w not in stopwords.words('english')]
@@ -18,8 +20,23 @@ def preprocess(sentence):
 
 
 with open("./relevant.txt", 'r') as f:
+    processed_documents = list(dict())
+    if isfile('processed_documents.pickle'):
+        with open('processed_documents.pickle', 'rb') as processed_documents_pickle:
+            processed_documents = pickle.load(processed_documents_pickle)
+    count = 0
     for baseurl in f:
-        print(baseurl)
-        content = ''.join(['%s' % x.text for x in bs(requests.get(baseurl[:-1]).text, 'html.parser').find_all('p')])
-        print(preprocess(content))
-        exit(0)
+        if baseurl not in [x['url'] for x in processed_documents]:
+            continue
+        try:
+            content = ''.join(['%s' % x.text for x in bs(requests.get(baseurl[:-1]).text, 'html.parser').find_all('p')])
+        except:
+            print("couldn't reach\n")
+            continue
+        processed_document = preprocess(content)
+        processed_documents.append({'url': baseurl, 'doc': processed_document})
+        count += 1
+        print(str(count) + '\r'),
+
+        with open('processed_documents.pickle', 'wb') as processed_documents_pickle:
+            pickle.dump(processed_documents, processed_documents_pickle, protocol=-1)
