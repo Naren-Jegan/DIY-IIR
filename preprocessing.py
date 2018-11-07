@@ -24,9 +24,12 @@ with open("./relevant.txt", 'r') as f:
     if isfile('processed_documents.pickle'):
         with open('processed_documents.pickle', 'rb') as processed_documents_pickle:
             processed_documents = pickle.load(processed_documents_pickle)
-    count = 0
+    count = len(processed_documents)
+    print(count)
+    i = 0
     for baseurl in f:
-        if baseurl not in [x['url'] for x in processed_documents]:
+        if i < count or (baseurl in [x['url'] for x in processed_documents]) or ('#' in baseurl and not baseurl.endswith('#')):
+            i += 1
             continue
         try:
             content = ''.join(['%s' % x.text for x in bs(requests.get(baseurl[:-1]).text, 'html.parser').find_all('p')])
@@ -37,6 +40,6 @@ with open("./relevant.txt", 'r') as f:
         processed_documents.append({'url': baseurl, 'doc': processed_document})
         count += 1
         print(str(count) + '\r'),
-
+        print(baseurl)
         with open('processed_documents.pickle', 'wb') as processed_documents_pickle:
             pickle.dump(processed_documents, processed_documents_pickle, protocol=-1)

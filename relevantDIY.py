@@ -28,17 +28,23 @@ relevant = []
 
 def web_crawl(pages):
     count = 0
+    iteration = 0
     while len(pages) is not 0:
         url = pages.pop(0)
         print('parsing: ' + str(url))
         hmtl = ""
         try:
             html = bs(requests.get(url).text, "html.parser")
+        except KeyboardInterrupt:
+            exit(0)
         except:
             continue
-        content = html.get_text().lower()
+        content = ''.join(['%s' % x.text.lower() for x in html.find_all('p')])
         if any([x in content for x in ["do it yourself", "how to", "do yourself", "easy way", "ways to", "diy"]]):
-            relevant.append(url)
+            if url not in relevant:
+                relevant.append(url)
+            else:
+                continue
             count += 1
             pages += [link.get('href')
                       for link in html.findAll('a')
@@ -50,12 +56,9 @@ def web_crawl(pages):
         if count < 100:
             continue
         with open("./relevant.txt", 'a+') as f:
-            f.write('\n'.join(relevant[-100:]) + '\n')
+            f.write('\n'.join(relevant[iteration*100 : (iteration+1)*100]) + '\n')
         count = 0
+        iteration += 1
 
-    return relevant
 
-
-relevant = web_crawl(pages)
-
-print(relevant)
+web_crawl(pages)
